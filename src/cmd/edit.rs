@@ -17,6 +17,10 @@ pub struct EditArgs {
     /// Edit with specific language
     #[arg(short, long)]
     pub lang: Option<String>,
+
+    /// Delete the written solution first and start again from a clean stub
+    #[arg(long)]
+    pub reset: bool,
 }
 
 impl EditArgs {
@@ -38,6 +42,11 @@ impl EditArgs {
             id,
             self.lang.clone(),
             crate::scaffold::Announce::Print,
+            if self.reset {
+                crate::scaffold::Existing::Replace
+            } else {
+                crate::scaffold::Existing::Keep
+            },
         )
         .await?;
 

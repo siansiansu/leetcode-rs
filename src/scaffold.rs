@@ -17,11 +17,22 @@ pub enum Announce {
     Silent,
 }
 
+/// What to do when the solution file for a problem is already on disk.
+///
+/// [`Existing::Replace`] is how `leetctl edit --reset` starts a repeat attempt from a clean stub:
+/// the old solution and its test-case file are deleted, then scaffolded again.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Existing {
+    Keep,
+    Replace,
+}
+
 /// Make sure the solution file for `id` exists, and return its path.
 ///
 /// Creates the file (and, when `code.test` is on, the test-case file) on first use, filled from the
-/// problem's description and the language's code stub. An existing file is left alone — this is
-/// safe to call before every edit, test, or submit.
+/// problem's description and the language's code stub. With [`Existing::Keep`] an existing file is
+/// left alone — that is safe to call before every edit, test, or submit; [`Existing::Replace`]
+/// throws the written solution away and scaffolds a fresh stub instead.
 ///
 /// `lang` overrides the configured language *and persists that choice*, matching what
 /// `leetctl edit --lang` has always done.
@@ -30,6 +41,7 @@ pub async fn ensure_code_file(
     id: i32,
     lang: Option<String>,
     announce: Announce,
+    existing: Existing,
 ) -> Result<String> {
     let problem = cache.get_problem(id)?;
     let mut conf = cache.to_owned().0.conf;
@@ -42,8 +54,10 @@ pub async fn ensure_code_file(
     }
 
     let path = crate::helper::code_path(&problem, Some(conf.code.lang.to_owned()))?;
-    if Path::new(&path).exists() {
-        return Ok(path);
+    match existing {
+        Existing::Keep if Path::new(&path).exists() => return Ok(path),
+        Existing::Keep => {}
+        Existing::Replace => remove_if_present(&path, &crate::helper::test_cases_path(&problem)?)?,
     }
 
     let mut question: std::result::Result<Question, _> = serde_json::from_str(&problem.desc);
@@ -130,6 +144,16 @@ fn write_code_file(
     Ok(())
 }
 
+/// Delete a solution file and its test-case file, ignoring the ones that are not there.
+fn remove_if_present(path: &str, test_path: &str) -> Result<()> {
+    for target in [path, test_path] {
+        if Path::new(target).exists() {
+            std::fs::remove_file(target)?;
+        }
+    }
+    Ok(())
+}
+
 /// A commented-out marker line, e.g. `// @lc code=start`.
 fn marker(comment_leading: &str, marker: &str) -> String {
     format!("{comment_leading} {marker}\n")
@@ -188,5 +212,19 @@ mod tests {
     #[test]
     fn marker_lines_are_commented_and_newline_terminated() {
         assert_eq!(marker("//", "@lc code=start"), "// @lc code=start\n");
+    }
+
+    #[test]
+    fn remove_if_present_skips_a_missing_test_case_file() {
+        let dir = std::env::temp_dir().join("leetctl-scaffold-reset");
+        std::fs::create_dir_all(&dir).unwrap();
+        let code = dir.join("1.two-sum.rs");
+        let tests = dir.join("1.two-sum.tests.dat");
+        std::fs::write(&code, "fn main() {}").unwrap();
+        let _ = std::fs::remove_file(&tests);
+
+        remove_if_present(code.to_str().unwrap(), tests.to_str().unwrap()).unwrap();
+
+        assert!(!code.exists());
     }
 }

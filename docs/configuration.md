@@ -99,6 +99,9 @@ pick = '${fid}.${slug}'
 
 With `lang = 'rust'`, `leetctl edit 1` writes `code/1.two-sum.rs` (and `code/1.two-sum.tests.dat` when `test = true`). Because the template can include `/`, it doubles as a way to lay out one directory per problem — see [Editors & LSP](./editors.md).
 
+`leetctl edit --reset 1` deletes both of those files and scaffolds them again, so a repeat attempt
+starts from a clean stub instead of last time's solution.
+
 ## `[storage]`
 
 Where leetctl keeps its files. Paths under `root` are created on demand. `~` in `root` expands to your home directory.

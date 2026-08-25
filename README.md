@@ -73,7 +73,7 @@ and flags. The headline ones:
 | Command | Alias | What it does |
 | --- | --- | --- |
 | `pick` | `p` | Pick a random problem, or one by id, `--name`, or `--daily`. Narrow the pool with `--set`, `--tag`, `--difficulty`, `--query` |
-| `edit` | `e` | Open a problem's code file; `--lang` overrides the configured language, `--daily` opens today's challenge |
+| `edit` | `e` | Open a problem's code file; `--lang` overrides the configured language, `--daily` opens today's challenge, `--reset` throws the written solution away and starts from a clean stub |
 | `test` | `t` | Run test cases; `--watch` re-runs on save, `--daily` targets today's challenge |
 | `exec` | `x` | Submit the solution |
 | `list` | `l` | List/filter problems by set, category, tag, difficulty, id range, or `--query` |

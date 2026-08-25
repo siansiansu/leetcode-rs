@@ -223,6 +223,7 @@ impl Backend {
                 fid,
                 None,
                 crate::scaffold::Announce::Silent,
+                crate::scaffold::Existing::Keep,
             )
             .await;
             let _ = tx.send(Msg::CodeFileReady { fid, res });
